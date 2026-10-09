@@ -13,4 +13,4 @@ The keyboard's message to the chat points at one folder here. Read its `index.md
 Every page is generated from the keyboard's code (`Manual.kt` in the keyboard's repository) and
 published by a pull request; nothing here is edited by hand.
 
-Current edition: [manual/9d3cb5e3/](manual/9d3cb5e3/index.html), the manual of the newest Prose keyboard.
+Current edition: [manual/f054dac9/](manual/f054dac9/index.html), the manual of the newest Prose keyboard.
