@@ -1,0 +1,32 @@
+# Tells Bing (and the other IndexNow engines: Yandex, Seznam, Naver) which pages changed, so a new
+# manual edition is indexed within hours instead of whenever a crawler comes by
+# (akinoame1/my_keyboard#86, "Can we try to access our manuals by search?"). Bing is what Copilot and
+# ChatGPT's search read; Google is told through Search Console and its sitemap instead.
+#
+# The key is public by design: IndexNow proves the site is ours by finding the same key in
+# e8169a597a3e67a07151546d69036dbe.txt on the site itself. Deleting that file stops the notices working.
+name: indexnow
+on:
+  push:
+    branches: [main]
+    paths: ["sitemap.xml"]
+  workflow_dispatch:
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for Pages to serve the sitemap that was pushed
+        run: |
+          for i in $(seq 1 40); do
+            if curl -fsS https://akinoame1.github.io/your_keyboard/sitemap.xml | cmp -s - sitemap.xml; then exit 0; fi
+            sleep 15
+          done
+          echo "Pages never served this sitemap"; exit 1
+      - name: Send the sitemap's pages to IndexNow
+        run: |
+          urls=$(grep -o '<loc>[^<]*</loc>' sitemap.xml | sed 's/<[^>]*>//g' | python3 -c 'import sys,json;print(json.dumps([l.strip() for l in sys.stdin if l.strip()]))')
+          body=$(printf '{"host":"akinoame1.github.io","key":"%s","keyLocation":"https://akinoame1.github.io/your_keyboard/%s.txt","urlList":%s}' "e8169a597a3e67a07151546d69036dbe" "e8169a597a3e67a07151546d69036dbe" "$urls")
+          code=$(curl -sS -o /dev/null -w '%{http_code}' -X POST https://api.indexnow.org/indexnow -H 'Content-Type: application/json; charset=utf-8' -d "$body")
+          echo "IndexNow answered $code"
+          case "$code" in 200|202) ;; *) exit 1 ;; esac
